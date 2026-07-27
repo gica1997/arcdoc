@@ -13,8 +13,7 @@ import { useDisclosure } from '@mantine/hooks';
 import {
   IconDashboard, IconSend, IconFileText, IconBell, IconUser, IconSettings,
   IconLogout, IconSun, IconMoon, IconArchive, IconHistory, IconShield,
-  IconChecklist, IconNotification, IconLock, IconKey, IconSession,
-  IconFileReport, IconHelp, IconMessages, IconClock, IconAlertTriangle,
+  IconChecklist, IconLock, IconFileReport, IconClock, IconAlertTriangle,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
