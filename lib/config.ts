@@ -7,17 +7,30 @@
  * This file serves as the single source of truth for all configuration values.
  */
 
+// Warn about missing production secrets
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change-this-to-a-secure-random-string-in-production') {
+    console.warn('[Config] WARNING: JWT_SECRET is not set to a secure value in production!');
+  }
+  if (!process.env.JWT_REFRESH_SECRET) {
+    console.warn('[Config] WARNING: JWT_REFRESH_SECRET is not set in production!');
+  }
+  if (!process.env.DATABASE_URL && !process.env.TURSO_DATABASE_URL) {
+    console.warn('[Config] WARNING: DATABASE_URL is not set in production!');
+  }
+}
+
 export const config = {
   // Database
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/arcdoc',
+    url: process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || '',
   },
 
   // JWT Authentication
   jwt: {
-    secret: process.env.JWT_SECRET || 'arcdoc-jwt-secret-development-only',
+    secret: process.env.JWT_SECRET || '',
     refreshSecret:
-      process.env.JWT_REFRESH_SECRET || 'arcdoc-jwt-refresh-secret-development-only',
+      process.env.JWT_REFRESH_SECRET || '',
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },

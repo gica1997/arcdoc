@@ -178,10 +178,10 @@ function UserMenu() {
         </Menu.Target>
 
         <Menu.Dropdown>
-          <Menu.Item leftSection={<IconUser size={14} />}>
+          <Menu.Item leftSection={<IconUser size={14} />} component={Link} href="/profil">
             Profil
           </Menu.Item>
-          <Menu.Item leftSection={<IconSettings size={14} />}>
+          <Menu.Item leftSection={<IconSettings size={14} />} component={Link} href="/administrare/setari">
             Setări
           </Menu.Item>
           <Menu.Divider />

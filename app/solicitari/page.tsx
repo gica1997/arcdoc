@@ -64,7 +64,7 @@ export default function RequestsPage() {
   async function reject(id: string) {
     const reason = prompt('Motiv respingere:');
     if (!reason) return;
-    try { await apiClient.post(`/api/v1/requests/${id}/reject`, { reason }); fetch(); } catch { }
+    try { await apiClient.post(`/api/v1/requests/${id}/reject`, { rejectionReason: reason }); fetch(); } catch { }
   }
 
   const statusColor: Record<string, string> = {

@@ -125,7 +125,7 @@ function pgToSqlite(sql: string): string {
   r = r.replace(/json_agg\s*\(\s*DISTINCT\s+/gi, 'json_group_array(DISTINCT ');
   r = r.replace(/\s*FILTER\s*\(\s*WHERE\s+[^)]+\)/gi, '');
   r = r.replace(/::\w+/g, '');
-  r = r.replace(/\s+RETURNING\s+\w+/gi, '');
+  r = r.replace(/\s+RETURNING\s+\w+(?:\s*,\s*\w+)*/gi, '');
   r = r.replace(/TO_CHAR\s*\(\s*(\w+)\s*,\s*'YYYY-MM'\s*\)/gi, "strftime('%Y-%m', $1)");
   return r;
 }
@@ -148,8 +148,20 @@ export function buildPaginationClause(sort = 'created_at', order: 'asc'|'desc' =
   return `ORDER BY "${s}" ${o} LIMIT ${l} OFFSET ${off}`;
 }
 
+/**
+ * Execute operations within a database transaction.
+ * Uses BEGIN/COMMIT/ROLLBACK for proper transactional semantics.
+ */
 export async function transaction<T>(cb: (q: typeof query) => Promise<T>): Promise<T> {
-  return cb(query);
+  await query('BEGIN');
+  try {
+    const result = await cb(query);
+    await query('COMMIT');
+    return result;
+  } catch (error) {
+    await query('ROLLBACK');
+    throw error;
+  }
 }
 
 export default { query, transaction, buildWhereClause, buildPaginationClause };

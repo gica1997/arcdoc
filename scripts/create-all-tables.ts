@@ -1,8 +1,18 @@
 import { createClient } from '@libsql/client/web';
+import 'dotenv/config';
+
+const TURSO_DATABASE_URL = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || '';
+const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN || '';
+
+if (!TURSO_DATABASE_URL) {
+  console.error('ERROR: TURSO_DATABASE_URL (or DATABASE_URL) environment variable is required.');
+  console.error('Set it in your .env file or pass it as an environment variable.');
+  process.exit(1);
+}
 
 const c = createClient({
-  url: 'libsql://arcdoc-arcdoc.aws-us-east-2.turso.io',
-  authToken: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODQ1NTQxNjAsImlkIjoiMDE5ZjdmYjctMWEwMS03NDJiLTk3Y2QtOTFhODliNDNjZDkxIiwia2lkIjoia3M2Rm9XSkZLcVdlWVBhMVdhaU5OVEV0dlc1eDdUQzNQTkZBSzR0NjJLYyIsInJpZCI6ImZjZGYzOWM5LTM5MDctNDc2ZS05ZWYxLTdlOTk1OGE2YWY2NCJ9.lW7Wu5jyCS_ZRqLbEG-0nUKMIPE0RKKm6d7BZTrvB2xmJN6Y1dykuM9686ZCHL-G2FWOz8u2OFMf6IZJ5xCUCw',
+  url: TURSO_DATABASE_URL,
+  authToken: TURSO_AUTH_TOKEN,
 });
 
 // Minimal schemas without DEFAULT datetime() - app handles timestamps
