@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import {
   Container, Title, Paper, PasswordInput, Button, Alert, Stack, Text, Group, Divider,
-  Switch, Box, Badge, Tooltip, List,
+  Switch, Box, Badge, Tooltip, List, Grid,
 } from '@mantine/core';
 import { IconCheck, IconAlertCircle, IconLock, IconShield, IconHistory, IconDevices, IconKey } from '@tabler/icons-react';
 import { useAuth } from '@/hooks/useAuth';
