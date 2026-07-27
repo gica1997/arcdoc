@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   AppShell, Burger, Group, Title, Text, NavLink, ScrollArea, ActionIcon, Tooltip,
-  useMantineColorScheme, Box, Divider, Avatar, Menu, UnstyledButton, Badge, rem,
+  useMantineColorScheme, Box, Divider, Avatar, Menu, UnstyledButton, Badge, Button, rem,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
