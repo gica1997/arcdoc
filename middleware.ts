@@ -17,14 +17,19 @@ const PUBLIC_PATHS = [
   '/api/v1/auth/forgot-password',
   '/api/v1/auth/reset-password',
   '/api/v1/auth/refresh-token',
+  '/api/v1/portal/register',
   '/',
   '/login',
+  '/forgot-password',
+  '/reset-password',
   '/auth/login',
   '/auth/register',
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/confirm-account',
   '/portal',
+  '/portal/dashboard',
+  '/portal/register',
   '/favicon.ico',
 ];
 
@@ -36,6 +41,7 @@ const STATIC_PATTERNS = [
   /^\/static\//,
   /^\/images\//,
   /^\/api\/docs/,
+  /^\/_next\/data\//,
   /\.(ico|png|jpg|jpeg|svg|css|js|woff2?|ttf|eot)$/,
 ];
 
@@ -47,88 +53,40 @@ function isPublicPath(pathname: string): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const response = NextResponse.next();
-
-  // ─── Security Headers ──────────────────
-
-  for (const [key, value] of Object.entries(securityHeaders)) {
-    response.headers.set(key, value);
-  }
-
-  // Content Security Policy
-  response.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';"
-  );
-
-  // Strict Transport Security (HSTS) - only in production
-  if (appConfig.app.isProduction) {
-    response.headers.set(
-      'Strict-Transport-Security',
-      'max-age=31536000; includeSubDomains; preload'
-    );
-  }
-
-  // ─── Authentication Check ──────────────
-
-  // Skip auth check for public paths and static assets
-  if (isPublicPath(pathname)) {
-    return response;
-  }
-
-  // Check for authentication on API routes
+  
+  // ONLY protect API routes - pages are protected client-side via AppLayout
   if (pathname.startsWith('/api/')) {
-    const authHeader = request.headers.get('authorization');
+    // Skip auth for public API endpoints
+    if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+      return NextResponse.next();
+    }
 
+    const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
-
-    // Token verification is done at the route handler level
-    // Middleware just checks for the presence of the Authorization header
   }
 
-  // Check for authentication on protected pages
-  if (!isPublicPath(pathname) && !pathname.startsWith('/api/')) {
-    const sessionToken = request.cookies.get('arcdoc_session')?.value;
-    const authHeader = request.headers.get('authorization');
+  const response = NextResponse.next();
 
-    // If no session cookie and no auth header on a protected page, redirect to login
-    if (!sessionToken && !authHeader) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  // ─── Security Headers ──────────────────
+  for (const [key, value] of Object.entries(securityHeaders)) {
+    response.headers.set(key, value);
   }
 
-  // ─── CORS for API Routes ──────────────
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';"
+  );
 
-  if (pathname.startsWith('/api/')) {
-    const origin = request.headers.get('origin');
-    const allowedOrigins = [
-      appConfig.app.url,
-      'https://arcdoc.vercel.app',
-    ];
-
-    if (origin && allowedOrigins.includes(origin)) {
-      response.headers.set('Access-Control-Allow-Origin', origin);
-      response.headers.set('Access-Control-Allow-Credentials', 'true');
-      response.headers.set('Vary', 'Origin');
-    }
-
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    response.headers.set('Access-Control-Max-Age', '86400');
-  }
-
-  // ─── Rate Limiting (API Only) ──────────
-
-  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/docs')) {
-    // Rate limiting is handled at the route handler level for more granularity
-    response.headers.set('X-RateLimit-Limit', String(appConfig.rateLimit.max));
+  if (appConfig.app.isProduction) {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
   }
 
   return response;

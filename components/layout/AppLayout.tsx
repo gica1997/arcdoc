@@ -233,9 +233,10 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   const filteredItems = filterSidebarByPermissions(sidebarConfig, effectivePermissions);
 
   const sections = [
-    { title: 'Principal', items: filteredItems.filter(i => ['dashboard'].includes(i.module || '')) },
+    { title: 'Principal', items: filteredItems.filter(i => i.module === 'dashboard' || (!i.module && !i.children)) },
     { title: 'Management', items: filteredItems.filter(i => ['users', 'organization', 'archive', 'requests'].includes(i.module || '')) },
     { title: 'Sistem', items: filteredItems.filter(i => ['reports', 'audit', 'settings'].includes(i.module || '')) },
+    { title: 'Altele', items: filteredItems.filter(i => !['dashboard', 'users', 'organization', 'archive', 'requests', 'reports', 'audit', 'settings'].includes(i.module || '') && i.module) },
   ];
 
   const iconMap: Record<string, React.ReactNode> = {

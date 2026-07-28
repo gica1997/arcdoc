@@ -54,6 +54,8 @@ export const sidebarConfig: SidebarItem[] = [
 ];
 
 export function filterSidebarByPermissions(items: SidebarItem[], userPermissions: string[]): SidebarItem[] {
+  // If user has no permissions stored, show everything (avoids empty sidebar)
+  if (!userPermissions || userPermissions.length === 0) return items;
   return items.map((item) => {
     if (item.children && item.children.length > 0) {
       const filteredChildren = filterSidebarByPermissions(item.children, userPermissions);
