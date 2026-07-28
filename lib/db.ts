@@ -7,7 +7,8 @@ let _token = '';
 
 function getConfig() {
   if (!_url) {
-    _url = (process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || '').trim();
+    // Prefer Turso env vars, fall back to generic DATABASE_URL
+    _url = (process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || '').trim();
     _token = (process.env.TURSO_AUTH_TOKEN || '').trim();
     // Convert libsql:// to https:// for HTTP REST API, trim any whitespace
     _url = _url.replace(/\s+/g, '');

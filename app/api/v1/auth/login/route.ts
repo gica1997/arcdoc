@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { loginUser } from '@/lib/auth-service';
 import { successResponse, errorResponse, tooManyRequestsResponse } from '@/lib/api-response';
 import { checkRateLimit } from '@/lib/security';
@@ -14,7 +14,23 @@ export async function POST(request: NextRequest) {
     if (!email || !password) return errorResponse('Email și parola sunt obligatorii.', 400);
 
     const result = await loginUser(email, password, rememberMe);
-    return successResponse(result, 'Autentificare reușită.');
+
+    // Set session cookie for middleware and server-side requests
+    const response = NextResponse.json(
+      { success: true, data: result, message: 'Autentificare reușită.' },
+      { status: 200 }
+    );
+
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60; // 30 or 7 days
+    response.cookies.set('arcdoc_session', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge,
+    });
+
+    return response;
   } catch (error: any) {
     const msg = error.message || 'Eroare la autentificare.';
     const status = msg.includes('blocat') || msg.includes('încercări') ? 429 : 401;

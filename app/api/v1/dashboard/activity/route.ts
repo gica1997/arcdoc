@@ -1,19 +1,12 @@
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
-import { verifyAccessToken, extractBearerToken } from '@/lib/auth';
-import { successResponse, unauthorizedResponse, serverErrorResponse } from '@/lib/api-response';
+import { getAuthUser } from '@/lib/auth-handler';
+import { successResponse, serverErrorResponse } from '@/lib/api-response';
 import logger from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const token = extractBearerToken(authHeader) || request.cookies.get('arcdoc_session')?.value || null;
-  if (!token) return unauthorizedResponse();
-
-  try {
-    verifyAccessToken(token);
-  } catch {
-    return unauthorizedResponse();
-  }
+  const auth = getAuthUser(request);
+  if ('error' in auth) return auth;
 
   try {
     const limit = 20;
