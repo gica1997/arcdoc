@@ -7,7 +7,8 @@
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
 
-const SETUP_SECRET = process.env.SETUP_SECRET || process.env.NEXT_PUBLIC_SETUP_SECRET || '';
+// Fallback secret for initial setup. Change in production!
+const SETUP_SECRET = process.env.SETUP_SECRET || process.env.NEXT_PUBLIC_SETUP_SECRET || 'arcDOCsetup2024';
 
 const TABLES: Record<string, string> = {
   organizational_structure: `id TEXT PRIMARY KEY, company_id TEXT, name TEXT NOT NULL, code TEXT, parent_id TEXT, level INTEGER, sort_order INTEGER, is_active INTEGER, created_at TEXT, updated_at TEXT`,
