@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Title, Table, Button, Group, TextInput, Select, Badge, ActionIcon, Modal, Stack, Alert,
-  Pagination, Paper, MultiSelect, Textarea, Box, Tabs, Grid,
+  Title, Paper, Button, Group, TextInput, Select, Badge, ActionIcon, Modal, Stack, Alert,
+  Pagination, Textarea, Box, Text, Tabs,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  IconPlus, IconEdit, IconTrash, IconSearch, IconFile, IconDownload, IconStar, IconStarFilled, IconMessage,
+  IconPlus, IconEdit, IconTrash, IconSearch, IconFileText, IconRefresh, IconAlertCircle,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import apiClient, { handleApiError } from '@/services/api';
+import { motion } from 'framer-motion';
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -57,12 +58,7 @@ export default function DocumentsPage() {
   function openNew() { setEditing(null); setForm({ title: '', code: '', number: '', document_type: '', description: '', format: 'physical', status: 'available', confidentiality_level: 'public', fund_id: '', series_id: '', department_id: '', tags: [] }); setFormError(''); open(); }
   function openEdit(it: any) {
     setEditing(it);
-    setForm({
-      title: it.title, code: it.code, number: it.number || '', document_type: it.document_type || '',
-      description: it.description || '', format: it.format || 'physical', status: it.status || 'available',
-      confidentiality_level: it.confidentiality_level || 'public', fund_id: it.fund_id || '',
-      series_id: it.series_id || '', department_id: it.department_id || '', tags: it.tags || [],
-    });
+    setForm({ title: it.title, code: it.code, number: it.number || '', document_type: it.document_type || '', description: it.description || '', format: it.format || 'physical', status: it.status || 'available', confidentiality_level: it.confidentiality_level || 'public', fund_id: it.fund_id || '', series_id: it.series_id || '', department_id: it.department_id || '', tags: it.tags || [] });
     setFormError(''); open();
   }
 
@@ -83,15 +79,21 @@ export default function DocumentsPage() {
   const formFields = (key: string) => ({ value: form[key] || '', onChange: (e: any) => setForm({ ...form, [key]: e.target?.value ?? e }) });
 
   return (
-    <div className="page-container">
-      <Group justify="space-between" mb="md">
-        <Title order={3}>Documente</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={openNew}>Document nou</Button>
-      </Group>
+    <div className="page-container animate-fade-in">
+      <Box mb="xl">
+        <Group justify="space-between">
+          <Box>
+            <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4}>Arhivă</Text>
+            <Title order={3} fw={700}>Documente arhivă</Title>
+            <Text c="dimmed" size="sm">Gestionați documentele fizice și digitale</Text>
+          </Box>
+          <Button leftSection={<IconPlus size={16} />} onClick={openNew}>Document nou</Button>
+        </Group>
+      </Box>
 
-      <Paper withBorder p="sm" mb="md">
+      <Paper p="md" mb="md" radius="lg" withBorder>
         <Group>
-          <TextInput placeholder="Caută..." leftSection={<IconSearch size={14} />} value={search}
+          <TextInput placeholder="Caută documente..." leftSection={<IconSearch size={14} />} value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }} style={{ flex: 1 }} />
           <Select placeholder="Fond" data={funds.map(f => ({ value: f.id, label: f.name }))} clearable searchable value={filterFund} onChange={v => { setFilterFund(v); setPage(1); }} />
           <Select placeholder="Tip" data={docTypes.map(t => ({ value: t.code, label: t.name }))} clearable value={filterType} onChange={v => { setFilterType(v); setPage(1); }} />
@@ -100,34 +102,58 @@ export default function DocumentsPage() {
         </Group>
       </Paper>
 
-      <Table>
-        <Table.Thead>
-          <Table.Tr><Table.Th>Nr.</Table.Th><Table.Th>Titlu</Table.Th><Table.Th>Tip</Table.Th><Table.Th>Fond</Table.Th><Table.Th>Format</Table.Th><Table.Th>Status</Table.Th><Table.Th>Acțiuni</Table.Th></Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {items.map(it => (
-            <Table.Tr key={it.id} style={{ cursor: 'pointer' }} onClick={() => router.push(`/arhiva/documente/${it.id}`)}>
-              <Table.Td><Badge variant="light">{it.code || it.number || '-'}</Badge></Table.Td>
-              <Table.Td fw={500}>{it.title}</Table.Td>
-              <Table.Td><Badge color="blue">{it.type_name || it.document_type}</Badge></Table.Td>
-              <Table.Td>{it.fund_name || '-'}</Table.Td>
-              <Table.Td><Badge color={it.format === 'digital' ? 'cyan' : 'gray'}>{it.format}</Badge></Table.Td>
-              <Table.Td><Badge color={it.status === 'available' ? 'green' : it.status === 'borrowed' ? 'orange' : 'red'}>{it.status}</Badge></Table.Td>
-              <Table.Td>
-                <Group gap={4} onClick={e => e.stopPropagation()}>
-                  <ActionIcon variant="subtle" color="blue" onClick={() => openEdit(it)}><IconEdit size={16} /></ActionIcon>
-                  <ActionIcon variant="subtle" color="red" onClick={() => del(it)}><IconTrash size={16} /></ActionIcon>
-                  {it.primary_file && <ActionIcon variant="subtle" color="cyan"><IconDownload size={16} /></ActionIcon>}
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-      {total > 20 && <Pagination total={Math.ceil(total / 20)} value={page} onChange={setPage} mt="md" />}
+      <Paper radius="lg" withBorder style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="arcdoc-table">
+            <thead>
+              <tr><th>Nr.</th><th>Titlu</th><th>Tip</th><th>Fond</th><th>Format</th><th>Status</th><th>Acțiuni</th></tr>
+            </thead>
+            <tbody>
+              {items.length === 0 ? (
+                <tr><td colSpan={7}>
+                  <div className="empty-state">
+                    <IconFileText size={48} className="empty-state-icon" />
+                    <div className="empty-state-title">Niciun document găsit</div>
+                    <div className="empty-state-description">Nu există documente care să corespundă criteriilor.</div>
+                    <Button variant="light" onClick={openNew}>Adaugă document</Button>
+                  </div>
+                </td></tr>
+              ) : items.map((it, idx) => (
+                <motion.tr key={it.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
+                  style={{ cursor: 'pointer' }} onClick={() => router.push(`/arhiva/documente/${it.id}`)}>
+                  <td><Badge variant="light">{it.code || it.number || '-'}</Badge></td>
+                  <td><Text fw={500} size="sm">{it.title}</Text></td>
+                  <td><Badge color="blue" variant="light" size="sm">{it.type_name || it.document_type}</Badge></td>
+                  <td><Text size="sm">{it.fund_name || '-'}</Text></td>
+                  <td><Badge color={it.format === 'digital' ? 'arcdoc-accent' : 'gray'} size="sm">{it.format === 'digital' ? 'Digital' : 'Fizic'}</Badge></td>
+                  <td>
+                    <Badge color={it.status === 'available' ? 'arcdoc-success' : it.status === 'borrowed' ? 'arcdoc-warning' : 'arcdoc-danger'} variant="dot" size="sm">
+                      {it.status === 'available' ? 'Disponibil' : it.status === 'borrowed' ? 'Împrumutat' : 'Arhivat'}
+                    </Badge>
+                  </td>
+                  <td>
+                    <Group gap={4} onClick={e => e.stopPropagation()}>
+                      <ActionIcon variant="subtle" color="gray" onClick={() => openEdit(it)}><IconEdit size={16} /></ActionIcon>
+                      <ActionIcon variant="subtle" color="red" onClick={() => del(it)}><IconTrash size={16} /></ActionIcon>
+                    </Group>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {total > 20 && (
+          <Box p="md" style={{ borderTop: '1px solid var(--arcdoc-border)' }}>
+            <Group justify="space-between">
+              <Text size="sm" c="dimmed">{total} documente în total</Text>
+              <Pagination total={Math.ceil(total / 20)} value={page} onChange={setPage} />
+            </Group>
+          </Box>
+        )}
+      </Paper>
 
       <Modal opened={opened} onClose={close} title={editing ? 'Editează document' : 'Document nou'} size="xl">
-        {formError && <Alert color="red" mb="md">{formError}</Alert>}
+        {formError && <Alert icon={<IconAlertCircle size={16} />} color="red" mb="md">{formError}</Alert>}
         <Tabs defaultValue="general">
           <Tabs.List>
             <Tabs.Tab value="general">General</Tabs.Tab>
@@ -149,25 +175,23 @@ export default function DocumentsPage() {
                 <Select label="Format" data={[{ value: 'physical', label: 'Fizic' }, { value: 'digital', label: 'Digital' }]} {...formFields('format')} />
                 <Select label="Status" data={[{ value: 'available', label: 'Disponibil' }, { value: 'borrowed', label: 'Împrumutat' }, { value: 'archived', label: 'Arhivat' }]} {...formFields('status')} />
               </Group>
-              <Select label="Confidențialitate" data={[{ value: 'public', label: 'Public' }, { value: 'restricted', label: 'Restricționat' }, { value: 'confidential', label: 'Confidențial' }]} {...formFields('confidentiality_level')} />
             </Stack>
           </Tabs.Panel>
           <Tabs.Panel value="classification" pt="md">
             <Stack>
               <Select label="Fond arhivistic" data={funds.map(f => ({ value: f.id, label: f.name }))} clearable searchable {...formFields('fund_id')} />
               <TextInput label="Departament" {...formFields('department_id')} />
-              <MultiSelect label="Etichete" data={[]} {...formFields('tags')} searchable />
             </Stack>
           </Tabs.Panel>
           <Tabs.Panel value="physical" pt="md">
             <Stack>
-              <TextInput label="Locație arhivă (ID)" {...formFields('archive_location_id')} />
+              <TextInput label="Locație arhivă" {...formFields('archive_location_id')} />
               <Textarea label="Observații" {...formFields('observations')} />
             </Stack>
           </Tabs.Panel>
         </Tabs>
         <Group justify="flex-end" mt="md">
-          <Button variant="outline" onClick={close}>Anulează</Button>
+          <Button variant="default" onClick={close}>Anulează</Button>
           <Button onClick={save} loading={saving}>{editing ? 'Salvează' : 'Creează'}</Button>
         </Group>
       </Modal>

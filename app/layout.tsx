@@ -1,11 +1,12 @@
 // ============================================
-// ArcDoc Enterprise - Root Layout
+// ArcDoc Enterprise 2026 — Root Layout
 // ============================================
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import AppLayout from '@/components/layout/AppLayout';
+import { arcdocTheme } from '@/lib/design-tokens';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,20 +15,20 @@ export const metadata: Metadata = {
     template: '%s | ArcDoc Enterprise',
   },
   description:
-    'Platformă enterprise pentru managementul arhivei fizice și digitale - ArcDoc',
+    'Platformă enterprise premium pentru managementul arhivei fizice și digitale — ArcDoc Enterprise Suite',
   keywords: [
-    'arhivare',
-    'document management',
-    'arhiva digitala',
-    'arhiva fizica',
-    'ArcDoc',
-    'enterprise',
+    'arhivare', 'document management', 'arhiva digitala', 'arhiva fizica',
+    'ArcDoc', 'enterprise', 'SaaS', 'arhivă electronică',
   ],
   authors: [{ name: 'ArcDoc' }],
-  robots: {
-    index: false,
-    follow: false,
-  },
+  robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -39,56 +40,87 @@ export default function RootLayout({
     <html lang="ro" suppressHydrationWarning>
       <head>
         <ColorSchemeScript defaultColorScheme="light" />
-        <meta
-          name="viewport"
-          content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
-        />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
       </head>
       <body>
         <MantineProvider
           defaultColorScheme="light"
           theme={{
-            primaryColor: 'blue',
-            fontFamily:
-              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-            defaultRadius: 'md',
-            colors: {
-              // Custom color palette can be defined here
-            },
+            ...arcdocTheme,
             components: {
-              AppShell: {
-                defaultProps: {
-                  padding: 'md',
-                },
-              },
               Button: {
                 defaultProps: {
                   size: 'sm',
+                  radius: 'md',
                 },
               },
               TextInput: {
                 defaultProps: {
                   size: 'sm',
+                  radius: 'md',
                 },
               },
               Select: {
                 defaultProps: {
                   size: 'sm',
+                  radius: 'md',
+                },
+              },
+              Paper: {
+                defaultProps: {
+                  radius: 'lg',
+                },
+                styles: {
+                  root: {
+                    background: 'var(--arcdoc-surface)',
+                    border: '1px solid var(--arcdoc-border)',
+                    transition: 'box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  },
                 },
               },
               Table: {
                 defaultProps: {
-                  striped: true,
                   highlightOnHover: true,
-                  withTableBorder: true,
+                  withTableBorder: false,
                   withColumnBorders: false,
+                },
+              },
+              Modal: {
+                defaultProps: {
+                  radius: 'lg',
+                  padding: 'lg',
+                  overlayProps: {
+                    backgroundOpacity: 0.5,
+                    blur: 4,
+                  },
+                },
+              },
+              Badge: {
+                defaultProps: {
+                  radius: 'xl',
                 },
               },
             },
           }}
         >
-          <Notifications position="top-right" zIndex={2077} />
+          <Notifications
+            position="top-right"
+            zIndex={2077}
+            containerWidth={400}
+            styles={{
+              notification: {
+                background: 'var(--arcdoc-glass-bg)',
+                backdropFilter: 'var(--arcdoc-glass-blur)',
+                WebkitBackdropFilter: 'var(--arcdoc-glass-blur)',
+                border: 'var(--arcdoc-glass-border)',
+                borderRadius: 'var(--arcdoc-radius-lg)',
+                boxShadow: 'var(--arcdoc-shadow-lg)',
+              },
+            }}
+          />
           <AppLayout>{children}</AppLayout>
         </MantineProvider>
       </body>

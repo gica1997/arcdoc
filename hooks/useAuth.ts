@@ -66,7 +66,18 @@ export function useAuth() {
   const updateUser = useCallback((u: UserProfile) => { localStorage.setItem('arcdoc_user', JSON.stringify(u)); setState((prev) => ({ ...prev, user: u })); }, []);
   const clearError = useCallback(() => setState((prev) => ({ ...prev, error: null })), []);
 
-  return { ...state, login, logout, refreshToken, updateUser, clearError };
+  const refresh = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/api/v1/users/me');
+      const u = res.data.data as UserProfile;
+      localStorage.setItem('arcdoc_user', JSON.stringify(u));
+      setState((prev) => ({ ...prev, user: u }));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  return { ...state, login, logout, refreshToken, updateUser, clearError, refresh };
 }
 
 export default useAuth;

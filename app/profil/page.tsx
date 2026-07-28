@@ -2,96 +2,93 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Container, Title, Paper, Grid, TextInput, PasswordInput, Button, Alert, Group, Text, Box, Tabs,
+  Title, Paper, TextInput, Button, Alert, Stack, Group, Avatar, Box, Text,
+  PasswordInput, SimpleGrid,
 } from '@mantine/core';
-import { IconAlertCircle, IconCheck, IconUser, IconLock } from '@tabler/icons-react';
+import { IconCheck, IconAlertCircle, IconUser, IconMail, IconPhone, IconLock } from '@tabler/icons-react';
 import { useAuth } from '@/hooks/useAuth';
 import apiClient from '@/services/api';
+import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [currentPwd, setCurrentPwd] = useState('');
-  const [newPwd, setNewPwd] = useState('');
-  const [confirmPwd, setConfirmPwd] = useState('');
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const { user, refresh } = useAuth();
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [msg, setMsg] = useState('');
+  const [pwMsg, setPwMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setFirstName(user.firstName);
-      setLastName(user.lastName);
-      setPhone((user as any).phone || '');
-    }
+    if (user) setForm({ firstName: user.firstName || '', lastName: user.lastName || '', email: user.email || '', phone: user.phone || '' });
   }, [user]);
 
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault(); setMsg(null); setLoading(true);
-    try {
-      const res = await apiClient.put(`/api/v1/users/${user!.id}`, { firstName, lastName, phone });
-      updateUser({ ...user!, firstName, lastName });
-      setMsg({ type: 'success', text: 'Profil actualizat.' });
-    } catch (err: any) {
-      setMsg({ type: 'error', text: err.response?.data?.error || 'Eroare.' });
-    } finally { setLoading(false); }
+  async function saveProfile() {
+    setMsg(''); setLoading(true);
+    try { await apiClient.put('/api/v1/users/me', form); setMsg('Profil actualizat.'); refresh(); }
+    catch (e: any) { setMsg(e.response?.data?.error || 'Eroare.'); }
+    finally { setLoading(false); }
   }
 
-  async function changePwd(e: React.FormEvent) {
-    e.preventDefault(); setMsg(null);
-    if (newPwd !== confirmPwd) { setMsg({ type: 'error', text: 'Parolele nu coincid.' }); return; }
-    setLoading(true);
-    try {
-      await apiClient.post('/api/v1/auth/change-password', { currentPassword: currentPwd, newPassword: newPwd });
-      setCurrentPwd(''); setNewPwd(''); setConfirmPwd('');
-      setMsg({ type: 'success', text: 'Parola schimbată.' });
-    } catch (err: any) {
-      setMsg({ type: 'error', text: err.response?.data?.error || 'Eroare.' });
-    } finally { setLoading(false); }
+  async function changePassword() {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) { setPwMsg('Parolele nu coincid.'); return; }
+    setPwMsg(''); setPwLoading(true);
+    try { await apiClient.post('/api/v1/auth/change-password', passwordForm); setPwMsg('Parolă schimbată.'); setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); }
+    catch (e: any) { setPwMsg(e.response?.data?.error || 'Eroare.'); }
+    finally { setPwLoading(false); }
   }
+
+  const initials = `${form.firstName?.[0] || ''}${form.lastName?.[0] || ''}`;
 
   return (
-    <Container size="md" py="md">
-      <Title order={3} mb="lg">Profilul meu</Title>
-      {msg && <Alert icon={msg.type === 'success' ? <IconCheck size={16} /> : <IconAlertCircle size={16} />} color={msg.type === 'success' ? 'green' : 'red'} mb="md">{msg.text}</Alert>}
-      <Tabs defaultValue="info">
-        <Tabs.List>
-          <Tabs.Tab value="info" leftSection={<IconUser size={14} />}>Informații</Tabs.Tab>
-          <Tabs.Tab value="password" leftSection={<IconLock size={14} />}>Schimbă parola</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="info" pt="md">
-          <Paper withBorder p="md">
-            <form onSubmit={saveProfile}>
-              <Grid>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput label="Prenume" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput label="Nume" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <TextInput label="Email" value={user?.email || ''} disabled />
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <TextInput label="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </Grid.Col>
-              </Grid>
-              <Button mt="md" type="submit" loading={loading}>Salvează</Button>
-            </form>
+    <div className="page-container animate-fade-in">
+      <Box mb="xl">
+        <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4}>Cont</Text>
+        <Title order={3} fw={700}>Profilul meu</Title>
+        <Text c="dimmed" size="sm">Gestionați informațiile personale și securitatea contului</Text>
+      </Box>
+
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+        {/* Profile */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <Paper p="lg" radius="lg" withBorder>
+            <Group mb="lg">
+              <Avatar size={64} radius="xl" color="arcdoc-primary" style={{ border: '3px solid var(--arcdoc-primary-200)' }}>{initials}</Avatar>
+              <Box>
+                <Text fw={600}>{form.firstName} {form.lastName}</Text>
+                <Text size="sm" c="dimmed">{form.email}</Text>
+              </Box>
+            </Group>
+            {msg && <Alert icon={msg.includes('actualizat') ? <IconCheck size={16} /> : <IconAlertCircle size={16} />} color={msg.includes('actualizat') ? 'green' : 'red'} mb="md">{msg}</Alert>}
+            <Stack>
+              <Group grow>
+                <TextInput label="Prenume" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
+                <TextInput label="Nume" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
+              </Group>
+              <TextInput label="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} leftSection={<IconMail size={14} />} />
+              <TextInput label="Telefon" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} leftSection={<IconPhone size={14} />} />
+              <Button onClick={saveProfile} loading={loading}>Salvează profilul</Button>
+            </Stack>
           </Paper>
-        </Tabs.Panel>
-        <Tabs.Panel value="password" pt="md">
-          <Paper withBorder p="md">
-            <form onSubmit={changePwd}>
-              <PasswordInput label="Parola curentă" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} required mb="sm" />
-              <PasswordInput label="Parola nouă" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} required mb="sm" />
-              <PasswordInput label="Confirmă parola nouă" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} required mb="md" />
-              <Button type="submit" loading={loading}>Schimbă parola</Button>
-            </form>
+        </motion.div>
+
+        {/* Password */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Paper p="lg" radius="lg" withBorder>
+            <Text fw={600} size="md" mb="lg">Schimbă parola</Text>
+            {pwMsg && <Alert icon={pwMsg.includes('schimbată') ? <IconCheck size={16} /> : <IconAlertCircle size={16} />} color={pwMsg.includes('schimbată') ? 'green' : 'red'} mb="md">{pwMsg}</Alert>}
+            <Stack>
+              <PasswordInput label="Parola curentă" value={passwordForm.currentPassword}
+                onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} />
+              <PasswordInput label="Parola nouă" value={passwordForm.newPassword}
+                onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} />
+              <PasswordInput label="Confirmă parola" value={passwordForm.confirmPassword}
+                onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} />
+              <Button onClick={changePassword} loading={pwLoading} leftSection={<IconLock size={16} />}>Schimbă parola</Button>
+            </Stack>
           </Paper>
-        </Tabs.Panel>
-      </Tabs>
-    </Container>
+        </motion.div>
+      </SimpleGrid>
+    </div>
   );
 }

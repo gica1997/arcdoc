@@ -1,85 +1,73 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Title, Paper, TextInput, Button, Stack, Group, Alert, PasswordInput, Switch, Tabs } from '@mantine/core';
-import { IconCheck } from '@tabler/icons-react';
+import { Title, Paper, Switch, Button, Alert, Stack, Group, Text, Box, Divider, Select, TextInput } from '@mantine/core';
+import { IconCheck, IconAlertCircle, IconSettings } from '@tabler/icons-react';
 import apiClient from '@/services/api';
+import { motion } from 'framer-motion';
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<Record<string, any>>({});
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     apiClient.get('/api/v1/settings').then(r => {
-      const map: Record<string, string> = {};
-      (r.data.data || []).forEach((s: any) => { map[s.key] = typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value); });
-      setSettings(map);
+      if (r.data.data) setSettings(r.data.data);
     }).catch(() => {});
   }, []);
 
   async function save() {
     setLoading(true); setMsg('');
-    try {
-      const payload: Record<string, any> = {};
-      for (const [k, v] of Object.entries(settings)) {
-        try { payload[k] = JSON.parse(v); } catch { payload[k] = v; }
-      }
-      await apiClient.put('/api/v1/settings', payload);
-      setMsg('Setări salvate.');
-    } catch (e: any) { setMsg(e.response?.data?.error || 'Eroare.'); }
+    try { await apiClient.put('/api/v1/settings', settings); setMsg('Setări actualizate.'); }
+    catch (e: any) { setMsg(e.response?.data?.error || 'Eroare.'); }
     finally { setLoading(false); }
   }
 
-  function setK(key: string, value: string) { setSettings(prev => ({ ...prev, [key]: value })); }
-
   return (
-    <div className="page-container">
-      <Title order={3} mb="lg">Setări platformă</Title>
-      {msg && <Alert color="green" mb="md"><IconCheck size={16} /> {msg}</Alert>}
-      <Tabs defaultValue="general">
-        <Tabs.List>
-          <Tabs.Tab value="general">Generale</Tabs.Tab>
-          <Tabs.Tab value="email">Email</Tabs.Tab>
-          <Tabs.Tab value="notifications">Notificări</Tabs.Tab>
-        </Tabs.List>
+    <div className="page-container animate-fade-in">
+      <Box mb="xl">
+        <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4}>Administrare</Text>
+        <Title order={3} fw={700}>Setări sistem</Title>
+        <Text c="dimmed" size="sm">Configurați parametrii globali ai platformei</Text>
+      </Box>
 
-        <Tabs.Panel value="general" pt="md">
-          <Paper withBorder p="md">
-            <Stack>
-              <TextInput label="Denumire platformă" value={settings.app_name || ''} onChange={e => setK('app_name', e.target.value)} />
-              <TextInput label="Limbă implicită" value={settings.default_language || 'ro'} onChange={e => setK('default_language', e.target.value)} />
-              <TextInput label="Fus orar" value={settings.timezone || 'Europe/Bucharest'} onChange={e => setK('timezone', e.target.value)} />
-              <TextInput label="Format dată" value={settings.date_format || 'DD.MM.YYYY'} onChange={e => setK('date_format', e.target.value)} />
-            </Stack>
-          </Paper>
-        </Tabs.Panel>
+      {msg && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+          <Alert icon={msg.includes('actualizate') ? <IconCheck size={16} /> : <IconAlertCircle size={16} />}
+            color={msg.includes('actualizate') ? 'green' : 'red'} mb="md">{msg}</Alert>
+        </motion.div>
+      )}
 
-        <Tabs.Panel value="email" pt="md">
-          <Paper withBorder p="md">
-            <Stack>
-              <TextInput label="SMTP Host" value={settings.smtp_host || ''} onChange={e => setK('smtp_host', e.target.value)} />
-              <TextInput label="SMTP Port" value={settings.smtp_port || ''} onChange={e => setK('smtp_port', e.target.value)} />
-              <TextInput label="Utilizator SMTP" value={settings.smtp_user || ''} onChange={e => setK('smtp_user', e.target.value)} />
-              <PasswordInput label="Parolă SMTP" value={settings.smtp_pass || ''} onChange={e => setK('smtp_pass', e.target.value)} />
-              <TextInput label="Expeditor implicit" value={settings.smtp_from || ''} onChange={e => setK('smtp_from', e.target.value)} />
-              <TextInput label="Nume expeditor" value={settings.smtp_from_name || ''} onChange={e => setK('smtp_from_name', e.target.value)} />
-            </Stack>
-          </Paper>
-        </Tabs.Panel>
+      <Stack>
+        <Paper p="lg" radius="lg" withBorder>
+          <Text fw={600} mb="md">Funcționalități</Text>
+          <Stack>
+            <Switch label="Permite înregistrare utilizatori externi" checked={settings.allowExternalRegistration ?? false}
+              onChange={e => setSettings({ ...settings, allowExternalRegistration: e.currentTarget.checked })} />
+            <Switch label="Activează notificări email" checked={settings.emailNotifications ?? true}
+              onChange={e => setSettings({ ...settings, emailNotifications: e.currentTarget.checked })} />
+            <Switch label="Necesită aprobare pentru solicitări" checked={settings.requireApproval ?? true}
+              onChange={e => setSettings({ ...settings, requireApproval: e.currentTarget.checked })} />
+            <Switch label="Activează împrumuturi automate" checked={settings.autoLoans ?? false}
+              onChange={e => setSettings({ ...settings, autoLoans: e.currentTarget.checked })} />
+          </Stack>
+        </Paper>
 
-        <Tabs.Panel value="notifications" pt="md">
-          <Paper withBorder p="md">
-            <Stack>
-              <Switch label="Cereri noi" checked={settings.notify_new_request !== 'false'} onChange={e => setK('notify_new_request', String(e.currentTarget.checked))} />
-              <Switch label="Documente aprobate" checked={settings.notify_doc_approved !== 'false'} onChange={e => setK('notify_doc_approved', String(e.currentTarget.checked))} />
-              <Switch label="Documente respinse" checked={settings.notify_doc_rejected !== 'false'} onChange={e => setK('notify_doc_rejected', String(e.currentTarget.checked))} />
-              <Switch label="Expirare termene" checked={settings.notify_deadline !== 'false'} onChange={e => setK('notify_deadline', String(e.currentTarget.checked))} />
-            </Stack>
-          </Paper>
-        </Tabs.Panel>
-      </Tabs>
-      <Group justify="flex-end" mt="md"><Button onClick={save} loading={loading}>Salvează setările</Button></Group>
+        <Paper p="lg" radius="lg" withBorder>
+          <Text fw={600} mb="md">Configurare</Text>
+          <Stack>
+            <Select label="Format dată implicit" data={[{ value: 'ro', label: 'RO (ZZ/LL/AAAA)' }, { value: 'iso', label: 'ISO (AAAA-LL-ZZ)' }, { value: 'us', label: 'US (MM/DD/AAAA)' }]}
+              value={settings.dateFormat || 'ro'} onChange={v => setSettings({ ...settings, dateFormat: v || 'ro' })} />
+            <TextInput label="Prefix număr document" value={settings.documentPrefix || ''}
+              onChange={e => setSettings({ ...settings, documentPrefix: e.target.value })} />
+          </Stack>
+        </Paper>
+
+        <Group justify="flex-end">
+          <Button onClick={save} loading={loading} leftSection={<IconSettings size={16} />}>Salvează setările</Button>
+        </Group>
+      </Stack>
     </div>
   );
 }

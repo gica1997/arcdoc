@@ -374,6 +374,7 @@ export interface UserProfile {
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string | null;
   userType: 'intern' | 'extern';
   companyId?: string | null;
   roles: string[];

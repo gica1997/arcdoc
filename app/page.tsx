@@ -1,14 +1,23 @@
-// ============================================
-// ArcDoc Enterprise - Main Page (Redirect)
-// ============================================
+'use client';
 
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Box, Text } from '@mantine/core';
+import { IconArchive } from '@tabler/icons-react';
 
-/**
- * Root page - redirects to dashboard or auth.
- */
 export default function HomePage() {
-  // In production, this would check for an existing session
-  // For now, redirect to dashboard
-  redirect('/dashboard');
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/dashboard');
+  }, [router]);
+
+  return (
+    <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <Box ta="center">
+        <IconArchive size={48} style={{ color: 'var(--arcdoc-primary-500)' }} />
+        <Text size="sm" c="dimmed" mt="sm">Redirecționare către ArcDoc...</Text>
+      </Box>
+    </Box>
+  );
 }
