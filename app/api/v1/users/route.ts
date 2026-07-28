@@ -1,19 +1,18 @@
 import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { query, buildWhereClause, buildPaginationClause } from '@/lib/db';
+import { query, buildPaginationClause } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
-import { verifyAccessToken, extractBearerToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth-handler';
 import {
   successResponse, successPaginatedResponse, createdResponse, errorResponse,
   unauthorizedResponse, notFoundResponse, buildPaginationMeta, parsePaginationParams,
 } from '@/lib/api-response';
 
 export async function GET(request: NextRequest) {
-  try {
-    const token = extractBearerToken(request.headers.get('authorization'));
-    if (!token) return unauthorizedResponse();
-    verifyAccessToken(token);
+  const auth = getAuthUser(request);
+  if (!auth.ok) return auth.response;
 
+  try {
     const { searchParams } = new URL(request.url);
     const { page, limit, sort, order } = parsePaginationParams(searchParams);
     const search = searchParams.get('search') || '';
@@ -36,7 +35,6 @@ export async function GET(request: NextRequest) {
       if (search) {
         conditions.push(`(u.email ILIKE $${idx} OR u.first_name ILIKE $${idx} OR u.last_name ILIKE $${idx})`);
         params.push(`%${search}%`);
-        idx++;
       }
       whereClause = 'WHERE ' + conditions.join(' AND ');
     }
@@ -66,11 +64,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const token = extractBearerToken(request.headers.get('authorization'));
-    if (!token) return unauthorizedResponse();
-    verifyAccessToken(token);
+  const auth = getAuthUser(request);
+  if (!auth.ok) return auth.response;
 
+  try {
     const body = await request.json();
     const { email, password, firstName, lastName, phone, cnp, userType, roleIds } = body;
     if (!email || !password || !firstName || !lastName) return errorResponse('Câmpurile obligatorii lipsesc.', 400);
