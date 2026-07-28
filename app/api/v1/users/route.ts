@@ -58,8 +58,9 @@ export async function GET(request: NextRequest) {
 
     return successPaginatedResponse(data.rows, buildPaginationMeta(total, page, limit));
   } catch (error: any) {
-    console.error('[Users API] GET error:', error);
-    return errorResponse('Eroare la listarea utilizatorilor.');
+    const msg = error?.message || String(error);
+    console.error('[Users API] GET error:', msg);
+    return errorResponse(msg);
   }
 }
 
