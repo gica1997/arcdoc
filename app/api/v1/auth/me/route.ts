@@ -5,7 +5,7 @@ import { successResponse, serverErrorResponse } from '@/lib/api-response';
 
 export async function GET(request: NextRequest) {
   const auth = getAuthUser(request);
-  if ('error' in auth) return auth; // 401
+  if (!auth.ok) return auth.response;
 
   try {
     const user = await getMe(auth.payload.sub);

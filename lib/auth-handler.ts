@@ -14,29 +14,29 @@ export interface AuthResult {
   token: string;
 }
 
+type AuthResponse = { ok: true; payload: JwtPayload; token: string } | { ok: false; response: ReturnType<typeof unauthorizedResponse> };
+
 /**
  * Extract and verify the JWT token from a request.
  * Checks Authorization header first, then falls back to arcdoc_session cookie.
- * Returns the JWT payload or sends a 401 response.
+ * Returns typed result with discriminated union for type narrowing.
  */
-export function getAuthUser(request: NextRequest): AuthResult | ReturnType<typeof unauthorizedResponse> {
-  // 1. Try Authorization header
+export function getAuthUser(request: NextRequest): AuthResponse {
   const authHeader = request.headers.get('authorization');
   let token = extractBearerToken(authHeader);
 
-  // 2. Try cookie fallback
   if (!token) {
     token = request.cookies.get('arcdoc_session')?.value || null;
   }
 
   if (!token) {
-    return unauthorizedResponse('Autentificare necesară.');
+    return { ok: false, response: unauthorizedResponse('Autentificare necesară.') };
   }
 
   const payload = verifyAccessTokenSafe(token);
   if (!payload) {
-    return unauthorizedResponse('Sesiune expirată. Vă rugăm să vă autentificați din nou.');
+    return { ok: false, response: unauthorizedResponse('Sesiune expirată. Vă rugăm să vă autentificați din nou.') };
   }
 
-  return { payload, token };
+  return { ok: true, payload, token };
 }

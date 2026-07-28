@@ -6,7 +6,7 @@ import logger from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const auth = getAuthUser(request);
-  if ('error' in auth) return auth;
+  if (!auth.ok) return auth.response;
 
   try {
     const limit = 20;
