@@ -68,7 +68,7 @@ export function useAuth() {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await apiClient.get('/api/v1/users/me');
+      const res = await apiClient.get('/api/v1/auth/me');
       const u = res.data.data as UserProfile;
       localStorage.setItem('arcdoc_user', JSON.stringify(u));
       setState((prev) => ({ ...prev, user: u }));

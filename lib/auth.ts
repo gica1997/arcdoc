@@ -105,6 +105,18 @@ export function decodeToken(token: string): JwtPayload | null {
 }
 
 /**
+ * Verify a JWT access token and return payload, or null if invalid.
+ * Safe version that never throws.
+ */
+export function verifyAccessTokenSafe(token: string): JwtPayload | null {
+  try {
+    return verifyAccessToken(token);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Extract the Bearer token from the Authorization header.
  */
 export function extractBearerToken(
@@ -180,6 +192,7 @@ export default {
   generateRefreshToken,
   verifyAccessToken,
   verifyRefreshToken,
+  verifyAccessTokenSafe,
   decodeToken,
   extractBearerToken,
   hasPermission,

@@ -192,9 +192,13 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
 
 /**
  * Content Security Policy header value.
+ * - style-src: 'unsafe-inline' needed for Mantine/Tailwind dynamic styles
+ * - font-src: 'self' data: for self-hosted fonts
+ * - connect-src: 'self' https: for API calls and Turso
+ * - img-src: 'self' data: blob: for images
  */
 export const CSP_HEADER =
-  "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';";
+  "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';";
 
 /**
  * Security headers to add to all responses.
