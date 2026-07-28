@@ -20,7 +20,21 @@ export function useAuth() {
         setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
       }
     } else {
-      setState((prev) => ({ ...prev, isLoading: false }));
+      // Fallback: try to fetch user from API using cookie (set by login)
+      fetch('/api/v1/auth/me', { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            const u = data.data as UserProfile;
+            localStorage.setItem('arcdoc_user', JSON.stringify(u));
+            setState({ user: u, isLoading: false, isAuthenticated: true, error: null });
+          } else {
+            setState((prev) => ({ ...prev, isLoading: false }));
+          }
+        })
+        .catch(() => {
+          setState((prev) => ({ ...prev, isLoading: false }));
+        });
     }
   }, []);
 
