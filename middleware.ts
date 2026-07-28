@@ -21,6 +21,7 @@ const PUBLIC_API_PATHS = [
   '/api/v1/portal/register',
   '/api/v1/admin/health',
   '/api/v1/admin/setup',
+  '/api/v1/admin/seed',
 ];
 
 /**
