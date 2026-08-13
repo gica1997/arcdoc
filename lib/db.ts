@@ -43,17 +43,22 @@ export async function query<T = Record<string, unknown>>(
   const config = getConfig();
   const start = Date.now();
 
-  // Convert $1 style params to ? for SQLite
+  // Convert $1 style params to ? for SQLite (respecting the numeric index so
+  // repeated params like $2, $2 map to the same argument).
   let convertedSql = sql;
   const args: unknown[] = [];
 
   if (params && params.length > 0) {
-    let paramIndex = 0;
-    convertedSql = sql.replace(/\$(\d+)/g, () => {
-      const idx = paramIndex++;
-      args.push(params[idx]);
-      return '?';
-    });
+    if (/\$\d+/.test(sql)) {
+      convertedSql = sql.replace(/\$(\d+)/g, (_match, num: string) => {
+        const idx = parseInt(num, 10) - 1;
+        args.push(params[idx]);
+        return '?';
+      });
+    } else {
+      // SQL already uses positional ? placeholders — pass params as-is.
+      args.push(...params);
+    }
   }
 
   // Convert PostgreSQL syntax to SQLite
@@ -98,6 +103,9 @@ export async function query<T = Record<string, unknown>>(
       const cell = row[i];
       if (cell && typeof cell === 'object' && 'value' in cell) {
         obj[col.name] = (cell as { value: unknown }).value;
+      } else if (cell && typeof cell === 'object' && (cell as { type?: string }).type === 'null') {
+        // Turso returns null as {type:"null"} without a value key
+        obj[col.name] = null;
       } else {
         obj[col.name] = cell;
       }
@@ -122,8 +130,14 @@ function pgToSqlite(sql: string): string {
   let r = sql;
   r = r.replace(/\bILIKE\b/g, 'LIKE');
   r = r.replace(/NOW\(\)\s*\+\s*INTERVAL\s*'(\d+)\s*(\w+)'/gi, (_, n, u) => `datetime('now', '+${n} ${u}')`);
+  // Bare NOW() (PostgreSQL) -> SQLite datetime('now')
+  r = r.replace(/\bNOW\(\)\b/gi, "datetime('now')");
   r = r.replace(/jsonb_build_object\s*\(/gi, 'json_object(');
+  // Convert all json_agg(...) forms to json_group_array(...) — handle both
+  // "json_agg(DISTINCT ...)" and plain "json_agg(...)" (used in subqueries)
   r = r.replace(/json_agg\s*\(\s*DISTINCT\s+/gi, 'json_group_array(DISTINCT ');
+  r = r.replace(/json_agg\s*\(/gi, 'json_group_array(');
+  r = r.replace(/json_group_array\s*\(\s*DISTINCT\s+json_group_array/gi, 'json_group_array(DISTINCT ');
   r = r.replace(/\s*FILTER\s*\(\s*WHERE\s+[^)]+\)/gi, '');
   r = r.replace(/::\w+/g, '');
   r = r.replace(/\s+RETURNING\s+\w+(?:\s*,\s*\w+)*/gi, '');

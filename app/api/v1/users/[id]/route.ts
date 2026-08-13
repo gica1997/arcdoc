@@ -14,8 +14,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const data = await query<any>(
       `SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.cnp, u.user_type, u.is_active, u.last_login_at, u.created_at, u.updated_at,
-       COALESCE(json_agg(DISTINCT jsonb_build_object('id', r.id, 'name', r.name, 'slug', r.slug)) FILTER (WHERE r.id IS NOT NULL), '[]') as roles
-       FROM users u LEFT JOIN user_roles ur ON ur.user_id = u.id LEFT JOIN roles r ON r.id = ur.role_id WHERE u.id = $1 GROUP BY u.id`, [id]
+       (SELECT COALESCE(json_group_array(json_object('id', r.id, 'name', r.name, 'slug', r.slug)), '[]')
+        FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id) as roles
+       FROM users u WHERE u.id = ?`, [id]
     );
     if (data.rowCount === 0) return notFoundResponse('Utilizator negăsit.');
     return successResponse(data.rows[0]);

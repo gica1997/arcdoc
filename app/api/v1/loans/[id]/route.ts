@@ -13,8 +13,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { action, return_condition, return_notes, due_date } = body;
 
   if (action === 'return') {
-    await query('UPDATE document_loans SET status=$1, returned_at=NOW(), return_condition=$2, return_notes=$3 WHERE id=$4',
+    await query("UPDATE document_loans SET status=$1, returned_at=datetime('now'), return_condition=$2, return_notes=$3 WHERE id=$4",
       ['returned', return_condition, return_notes, id]);
+
     const loan = await query('SELECT document_id FROM document_loans WHERE id=$1', [id]);
     if (loan.rows[0]) {
       await query('UPDATE documents SET status=\'available\' WHERE id=$1', [loan.rows[0].document_id]);
@@ -25,7 +26,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return successResponse(null, 'Document restituit.');
   }
   if (action === 'extend' && due_date) {
-    await query('UPDATE document_loans SET due_date=$1, extended_count=extended_count+1, updated_at=NOW() WHERE id=$2', [due_date, id]);
+    await query("UPDATE document_loans SET due_date=$1, extended_count=extended_count+1, updated_at=datetime('now') WHERE id=$2", [due_date, id]);
+
     return successResponse(null, 'Termen prelungit.');
   }
   return errorResponse('Acțiune necunoscută.', 400);

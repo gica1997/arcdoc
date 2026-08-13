@@ -13,18 +13,20 @@ export async function GET(request: NextRequest) {
 
     const [logins, docs, reqs, loans, disposals] = await Promise.all([
       query<any>('SELECT id as user_id, first_name || \' \' || last_name as user_name, last_login_at as created_at FROM users WHERE last_login_at IS NOT NULL ORDER BY last_login_at DESC LIMIT $1', [limit]),
-      query<any>('SELECT d.title as entity_name, d.created_at, d.created_by as user_id FROM documents d WHERE d.status != \'deleted\' ORDER BY d.created_at DESC LIMIT $1', [limit]),
-      query<any>('SELECT r.number as entity_name, r.created_at, r.user_id FROM requests r ORDER BY r.created_at DESC LIMIT $1', [limit]),
-      query<any>('SELECT d.title as entity_name, dl.loan_date as created_at, dl.user_id FROM document_loans dl LEFT JOIN documents d ON d.id = dl.document_id WHERE dl.status=\'active\' ORDER BY dl.loan_date DESC LIMIT $1', [limit]),
-      query<any>('SELECT d.title as entity_name, dp.proposed_at as created_at, dp.proposed_by as user_id FROM disposal_proposals dp LEFT JOIN documents d ON d.id = dp.document_id ORDER BY dp.proposed_at DESC LIMIT $1', [limit]),
+      query<any>('SELECT d.title as entity_name, d.created_at, d.created_by as user_id, u.first_name || \' \' || u.last_name as user_name FROM documents d LEFT JOIN users u ON u.id = d.created_by WHERE d.status != \'deleted\' ORDER BY d.created_at DESC LIMIT $1', [limit]),
+      query<any>('SELECT r.number as entity_name, r.created_at, r.user_id, u.first_name || \' \' || u.last_name as user_name FROM requests r LEFT JOIN users u ON u.id = r.user_id ORDER BY r.created_at DESC LIMIT $1', [limit]),
+      query<any>('SELECT d.title as entity_name, dl.loan_date as created_at, dl.user_id, u.first_name || \' \' || u.last_name as user_name FROM document_loans dl LEFT JOIN documents d ON d.id = dl.document_id LEFT JOIN users u ON u.id = dl.user_id WHERE dl.status=\'active\' ORDER BY dl.loan_date DESC LIMIT $1', [limit]),
+      query<any>('SELECT d.title as entity_name, dp.proposed_at as created_at, dp.proposed_by as user_id, u.first_name || \' \' || u.last_name as user_name FROM disposal_proposals dp LEFT JOIN documents d ON d.id = dp.document_id LEFT JOIN users u ON u.id = dp.proposed_by ORDER BY dp.proposed_at DESC LIMIT $1', [limit]),
+
     ]);
 
     const activity = [
       ...logins.rows.map(r => ({ action: 'login', user_name: r.user_name, created_at: r.created_at, entity_type: null, entity_name: null, user_id: r.user_id })),
-      ...docs.rows.map(r => ({ action: 'document_created', user_name: null, created_at: r.created_at, entity_type: 'document', entity_name: r.entity_name, user_id: r.user_id })),
-      ...reqs.rows.map(r => ({ action: 'request_created', user_name: null, created_at: r.created_at, entity_type: 'request', entity_name: r.entity_name, user_id: r.user_id })),
-      ...loans.rows.map(r => ({ action: 'loan_active', user_name: null, created_at: r.created_at, entity_type: 'loan', entity_name: r.entity_name, user_id: r.user_id })),
-      ...disposals.rows.map(r => ({ action: 'disposal_proposed', user_name: null, created_at: r.created_at, entity_type: 'disposal', entity_name: r.entity_name, user_id: r.user_id })),
+      ...docs.rows.map(r => ({ action: 'document_created', user_name: r.user_name || null, created_at: r.created_at, entity_type: 'document', entity_name: r.entity_name, user_id: r.user_id })),
+      ...reqs.rows.map(r => ({ action: 'request_created', user_name: r.user_name || null, created_at: r.created_at, entity_type: 'request', entity_name: r.entity_name, user_id: r.user_id })),
+      ...loans.rows.map(r => ({ action: 'loan_active', user_name: r.user_name || null, created_at: r.created_at, entity_type: 'loan', entity_name: r.entity_name, user_id: r.user_id })),
+      ...disposals.rows.map(r => ({ action: 'disposal_proposed', user_name: r.user_name || null, created_at: r.created_at, entity_type: 'disposal', entity_name: r.entity_name, user_id: r.user_id })),
+
     ];
 
     activity.sort((a, b) => {

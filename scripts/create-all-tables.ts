@@ -63,7 +63,9 @@ const tables: Record<string, string> = {
   withdrawal_orders: `id TEXT PRIMARY KEY, created_by TEXT, division TEXT, department TEXT, geographic_zone TEXT, delivery_address TEXT, transport_method TEXT, archival_unit_number TEXT, urgency TEXT, status TEXT, notes TEXT, assigned_to TEXT, created_at TEXT, updated_at TEXT`,
   evidence_registry: `id TEXT PRIMARY KEY, user_id TEXT, operation TEXT NOT NULL, fund_name TEXT, file_name TEXT, document_code TEXT, entry_type TEXT, exit_type TEXT, return_type TEXT, permanent_withdrawal INTEGER, previous_status TEXT, new_status TEXT, division TEXT, department TEXT, geographic_zone TEXT, notes TEXT, created_at TEXT`,
   process_verbals: `id TEXT PRIMARY KEY, type TEXT NOT NULL, reference_type TEXT, reference_id TEXT, content TEXT NOT NULL, generated_by TEXT, created_at TEXT`,
+  verifications: `id TEXT PRIMARY KEY, document_id TEXT, code TEXT NOT NULL, valid INTEGER, created_at TEXT`,
 };
+
 
 async function main() {
   let ok = 0, err = 0;

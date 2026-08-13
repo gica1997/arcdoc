@@ -1,5 +1,5 @@
 // ============================================
-// ArcDoc Enterprise - Portal Registration API
+// ArcDoc Enterprise - Registration API
 // ============================================
 
 import { NextRequest } from 'next/server';
@@ -11,13 +11,13 @@ import { createdResponse, errorResponse } from '@/lib/api-response';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, cnp, division, service, geographicZone, password } = body;
+    const { firstName, lastName, email, phone, cnp, password } = body;
 
     if (!firstName || !lastName || !email || !password) {
       return errorResponse('Nume, prenume, email și parola sunt obligatorii.', 400);
     }
 
-    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+    const existing = await query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
     if (existing.rowCount > 0) {
       return errorResponse('Există deja un cont cu această adresă de email.', 409);
     }
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO users (id, email, password_hash, first_name, last_name, phone, cnp, user_type,
         is_active, is_verified, password_changed_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'extern', 1, 0, datetime('now'))`,
-      [id, email, passwordHash, firstName, lastName, phone || null, cnp || null]
+      [id, email.toLowerCase(), passwordHash, firstName, lastName, phone || null, cnp || null]
     );
 
 
@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
         [uuidv4(), id, (roleResult.rows[0] as { id: string }).id, id]
       );
     }
+
+    // Assign permissions inherited from role are automatic via role_permissions
 
     return createdResponse({ id }, 'Cont creat cu succes. Verificați emailul pentru confirmare.');
   } catch (e: any) {

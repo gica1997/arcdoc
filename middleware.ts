@@ -19,10 +19,15 @@ const PUBLIC_API_PATHS = [
   '/api/v1/auth/reset-password',
   '/api/v1/auth/refresh-token',
   '/api/v1/portal/register',
+  '/api/v1/public/requests',
+  '/api/v1/requests/track',
+  '/api/v1/verifications/recent',
+  '/api/v1/verifications/check',
   '/api/v1/admin/health',
   '/api/v1/admin/setup',
   '/api/v1/admin/seed',
 ];
+
 
 /**
  * Static asset patterns to skip entirely (no security headers either).

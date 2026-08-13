@@ -23,7 +23,12 @@ export default function SeriesPage() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    try { const r = await apiClient.get(`/api/v1/series${search ? `?search=${search}` : ''}`); setItems(r.data.data || []); }
+    try {
+      const r = await apiClient.get('/api/v1/document-series');
+      const all = r.data.data || [];
+      setItems(search ? all.filter((it: any) => (it.name || '').toLowerCase().includes(search.toLowerCase()) || (it.code || '').toLowerCase().includes(search.toLowerCase())) : all);
+    }
+
     catch {} finally { setLoading(false); }
   }, [search]);
 
@@ -35,15 +40,17 @@ export default function SeriesPage() {
   async function save() {
     setFormError(''); setSaving(true);
     try {
-      if (editing) await apiClient.put(`/api/v1/series/${editing.id}`, form);
-      else await apiClient.post('/api/v1/series', form);
+      if (editing) await apiClient.put(`/api/v1/document-series/${editing.id}`, form);
+      else await apiClient.post('/api/v1/document-series', form);
+
       close(); fetch();
     } catch (err) { setFormError(handleApiError(err)); } finally { setSaving(false); }
   }
 
   async function del(it: any) {
     if (!confirm(`Ștergeți seria "${it.name}"?`)) return;
-    try { await apiClient.delete(`/api/v1/series/${it.id}`); fetch(); } catch {}
+    try { await apiClient.delete(`/api/v1/document-series/${it.id}`); fetch(); } catch {}
+
   }
 
   return (

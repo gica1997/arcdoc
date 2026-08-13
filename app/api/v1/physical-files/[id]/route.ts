@@ -10,10 +10,10 @@ export async function GET(_r: NextRequest, { params }: { params: Promise<{ id: s
   const { id } = await params;
   const data = await query<any>(
     `SELECT d.*, al.name as location_name,
-     (SELECT json_agg(jsonb_build_object('id',lh.id,'from_name',fal.name,'to_name',tal.name,'movement_type',lh.movement_type,'reason',lh.reason,'created_at',lh.created_at,'user_name',u.first_name||' '||u.last_name)
+     (SELECT COALESCE(json_group_array(json_object('id',lh.id,'from_name',fal.name,'to_name',tal.name,'movement_type',lh.movement_type,'reason',lh.reason,'created_at',lh.created_at,'user_name',u.first_name||' '||u.last_name)), '[]')
       FROM location_history lh LEFT JOIN archive_locations fal ON fal.id=lh.from_location_id LEFT JOIN archive_locations tal ON tal.id=lh.to_location_id LEFT JOIN users u ON u.id=lh.moved_by
-      WHERE lh.document_id=d.id ORDER BY lh.created_at DESC) as location_history
-     FROM documents d LEFT JOIN archive_locations al ON al.id=d.archive_location_id WHERE d.id=$1`, [id]);
+      WHERE lh.document_id=d.id) as location_history
+     FROM documents d LEFT JOIN archive_locations al ON al.id=d.archive_location_id WHERE d.id=?`, [id]);
   if (data.rowCount === 0) return notFoundResponse('Dosar negăsit.');
   return successResponse(data.rows[0]);
 }

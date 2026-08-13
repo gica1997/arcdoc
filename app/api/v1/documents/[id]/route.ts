@@ -11,17 +11,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const data = await query<any>(
     `SELECT d.*, f.name as fund_name, ds.name as series_name, dep.name as department_name,
       al.name as archive_location_name, rp.name as retention_period_name,
-      COALESCE(json_agg(DISTINCT jsonb_build_object('id', da.id, 'file_name', da.file_name, 'file_url', da.file_url, 'file_size', da.file_size, 'mime_type', da.mime_type, 'is_primary', da.is_primary)) FILTER (WHERE da.id IS NOT NULL), '[]') as attachments,
-      COALESCE(json_agg(DISTINCT dt.tag) FILTER (WHERE dt.tag IS NOT NULL), '[]') as tags
+      (SELECT COALESCE(json_group_array(json_object('id', da.id, 'file_name', da.file_name, 'file_url', da.file_url, 'file_size', da.file_size, 'mime_type', da.mime_type, 'is_primary', da.is_primary)), '[]')
+       FROM document_attachments da WHERE da.document_id = d.id) as attachments,
+      (SELECT COALESCE(json_group_array(dt.tag), '[]') FROM document_tags dt WHERE dt.document_id = d.id) as tags
     FROM documents d
     LEFT JOIN archival_funds f ON f.id = d.fund_id
     LEFT JOIN document_series ds ON ds.id = d.series_id
     LEFT JOIN organizational_structure dep ON dep.id = d.department_id
     LEFT JOIN archive_locations al ON al.id = d.archive_location_id
     LEFT JOIN retention_periods rp ON rp.id = d.retention_period_id
-    LEFT JOIN document_attachments da ON da.document_id = d.id
-    LEFT JOIN document_tags dt ON dt.document_id = d.id
-    WHERE d.id = $1 GROUP BY d.id, f.name, ds.name, dep.name, al.name, rp.name`, [id]
+    WHERE d.id = ?`, [id]
   );
   if (data.rowCount === 0) return notFoundResponse('Document negăsit.');
   return successResponse(data.rows[0]);

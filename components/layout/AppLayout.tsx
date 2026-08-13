@@ -226,6 +226,21 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   const userRoles = user?.roles || [];
   const isAdmin = userRoles.includes('administrator');
 
+  // Track which parent items are expanded (click-to-expand submenus)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Auto-expand the parent of the currently active route
+  useEffect(() => {
+    setExpanded(prev => {
+      const next = { ...prev };
+      sidebarConfig.forEach(item => {
+        if (item.children?.some(c => c.path === pathname)) next[item.label] = true;
+      });
+      return next;
+    });
+  }, [pathname]);
+
+
   const effectivePermissions = isAdmin
     ? sidebarConfig.flatMap(item => [item.permissions || [], ...(item.children || []).map(c => c.permissions || [])]).flat().filter(Boolean) as string[]
     : userPermissions;
@@ -298,18 +313,35 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
       );
     }
 
+    const isExpanded = hasChildren ? !!expanded[item.label] : active;
+
     return (
       <Box key={item.label} mb={2}>
         <Link
-          href={item.path || '#'}
+          href={hasChildren ? '#' : item.path || '#'}
           className={`sidebar-link ${active ? 'active' : ''}`}
-          onClick={onNavigate}
+          onClick={e => {
+            if (hasChildren) {
+              e.preventDefault();
+              setExpanded(prev => ({ ...prev, [item.label]: !prev[item.label] }));
+            } else {
+              onNavigate?.();
+            }
+          }}
         >
           {getIcon(item.icon)}
           <Text size="sm" style={{ flex: 1 }}>{item.label}</Text>
-          {hasChildren && <IconChevronDown size={14} style={{ transform: active ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}
+          {hasChildren && (
+            <IconChevronDown
+              size={14}
+              style={{
+                transform: isExpanded ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s',
+              }}
+            />
+          )}
         </Link>
-        {hasChildren && active && (
+        {hasChildren && isExpanded && (
           <Box ml="lg" mt={2}>
             {item.children!.map(child => (
               <Link
@@ -328,6 +360,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
       </Box>
     );
   }
+
 
   return (
     <>

@@ -12,10 +12,12 @@ export async function GET(request: NextRequest) {
     const [docs, files, users, requests, loans, disposal] = await Promise.all([
       query('SELECT COUNT(*) as total FROM documents WHERE status != $1', ['deleted']),
       query('SELECT COUNT(*) as total FROM documents WHERE format = $1', ['physical']),
-      query('SELECT COUNT(*) as total FROM users WHERE is_active = 1'),
-      query('SELECT COUNT(*) as total FROM requests WHERE status = $1', ['submitted']),
+      query('SELECT COUNT(*) as total FROM users WHERE is_active IS NOT NULL'),
+
+      query('SELECT COUNT(*) as total FROM requests WHERE status IN ($1, $2)', ['pending', 'submitted']),
       query('SELECT COUNT(*) as total FROM document_loans WHERE status = $1', ['active']),
       query('SELECT COUNT(*) as total FROM disposal_proposals WHERE status = $1', ['proposed']),
+
     ]);
 
     return successResponse({

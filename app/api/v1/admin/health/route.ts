@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
   try { verifyAccessToken(token); } catch { return unauthorizedResponse(); }
   const [db, docs, users, uptime] = await Promise.all([
     query('SELECT 1 as ok'),
-    query('SELECT COUNT(*)::int as count FROM documents'),
-    query('SELECT COUNT(*)::int as count FROM users WHERE is_active=true'),
+    query('SELECT COUNT(*) as count FROM documents'),
+    query('SELECT COUNT(*) as count FROM users WHERE is_active = 1'),
     Promise.resolve(process.uptime()),
   ]);
   return successResponse({
@@ -21,4 +21,5 @@ export async function GET(request: NextRequest) {
     uptime: Math.floor(uptime),
     timestamp: new Date().toISOString(),
   });
+
 }

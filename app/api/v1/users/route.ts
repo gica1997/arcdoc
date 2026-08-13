@@ -42,21 +42,38 @@ export async function GET(request: NextRequest) {
     const countResult = await query<{ total: string }>(`SELECT COUNT(*) as total FROM users u ${whereClause}`, params);
     const total = parseInt(countResult.rows[0]?.total || '0', 10);
 
+    // Build pagination with qualified sort column to avoid ambiguous column errors in JOIN queries
+    const s = /^[a-zA-Z_]+$/.test(sort) ? sort : 'created_at';
+    const o = order === 'asc' ? 'ASC' : 'DESC';
+    const l = Math.min(Math.max(1, limit), 100);
+    const off = (Math.max(1, page) - 1) * l;
+    const paginationClause = `ORDER BY u."${s}" ${o} LIMIT ${l} OFFSET ${off}`;
     const dataParams = [...params];
-    const paginationClause = buildPaginationClause(sort, order, page, limit);
+
     const data = await query<any>(
       `SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.cnp, u.user_type, u.is_active, u.last_login_at, u.created_at,
-       COALESCE(json_agg(DISTINCT jsonb_build_object('id', r.id, 'name', r.name, 'slug', r.slug)) FILTER (WHERE r.id IS NOT NULL), '[]') as roles
+       COALESCE(json_group_array(DISTINCT json_object('id', r.id, 'name', r.name, 'slug', r.slug)), '[]') as roles
        FROM users u
        LEFT JOIN user_roles ur ON ur.user_id = u.id
        LEFT JOIN roles r ON r.id = ur.role_id
        ${whereClause}
-       GROUP BY u.id
+       GROUP BY u.id, u.email, u.first_name, u.last_name, u.phone, u.cnp, u.user_type, u.is_active, u.last_login_at, u.created_at
        ${paginationClause}`,
       dataParams
     );
 
-    return successPaginatedResponse(data.rows, buildPaginationMeta(total, page, limit));
+    // Turso returns json_group_array as a JSON *string* — parse it into a real array
+    const parsed = (data.rows as any[]).map((row: any) => {
+      let roles = row.roles;
+      if (typeof roles === 'string') {
+        try { roles = JSON.parse(roles); } catch { roles = []; }
+      }
+      if (!Array.isArray(roles)) roles = [];
+      return { ...row, roles };
+    });
+
+    return successPaginatedResponse(parsed, buildPaginationMeta(total, page, limit));
+
   } catch (error: any) {
     const msg = error?.message || String(error);
     console.error('[Users API] GET error:', msg);

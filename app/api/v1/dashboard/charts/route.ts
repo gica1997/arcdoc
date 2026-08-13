@@ -55,14 +55,18 @@ export async function GET(request: NextRequest) {
       `),
     ]);
 
+    // Convert Turso numeric strings to Numbers so charts render correctly
+    const toNum = (rows: any[]) => rows.map(r => ({ ...r, count: r.count != null ? Number(r.count) : r.count, value: r.value != null ? Number(r.value) : r.value }));
+
     return successResponse({
-      documentsByMonth: docsMonth.rows,
-      documentsByDepartment: byDept.rows,
-      documentsByFund: byFund.rows,
-      documentsByStatus: byStatus.rows,
-      documentsByConfidentiality: byConf.rows,
-      requestsByMonth: requestsByMonth.rows,
+      documentsByMonth: toNum(docsMonth.rows),
+      documentsByDepartment: toNum(byDept.rows),
+      documentsByFund: toNum(byFund.rows),
+      documentsByStatus: toNum(byStatus.rows),
+      documentsByConfidentiality: toNum(byConf.rows),
+      requestsByMonth: toNum(requestsByMonth.rows),
     });
+
   } catch (error) {
     logger.apiError(error, { path: '/api/v1/dashboard/charts', method: 'GET' });
     return serverErrorResponse('Internal Server Error');
